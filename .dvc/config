@@ -1,4 +1,4 @@
 [core]
-    remote = gcs_remote
-['remote "gcs_remote"']
-    url = https://console.cloud.google.com/storage/browser/eddie_banana_predictor?project=banana-predictor
+    remote = my_local_remote
+['remote "my_local_remote"']
+    url = C:\dvc_local_test
