@@ -1,4 +1,0 @@
-[core]
-    remote = gcs_remote
-['remote "gcs_remote"']
-    url = gs://my-unique-banana-bucket/dvc-cache
