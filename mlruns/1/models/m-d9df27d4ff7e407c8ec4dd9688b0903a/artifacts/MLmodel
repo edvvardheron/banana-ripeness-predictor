@@ -1,0 +1,22 @@
+artifact_path: file:///C:/Users/Ed/banana-ripeness-predictor/mlruns/1/models/m-d9df27d4ff7e407c8ec4dd9688b0903a/artifacts
+flavors:
+  python_function:
+    data: data
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.tensorflow
+    python_version: 3.10.19
+  tensorflow:
+    code: null
+    data: data
+    keras_version: 2.20.0
+    model_type: keras
+    save_format: tf
+mlflow_version: 3.7.0
+model_id: m-d9df27d4ff7e407c8ec4dd9688b0903a
+model_size_bytes: 33951138
+model_uuid: m-d9df27d4ff7e407c8ec4dd9688b0903a
+prompts: null
+run_id: 4350db893bf34d548a7c2e94d1f7afce
+utc_time_created: '2025-12-16 22:29:18.289809'

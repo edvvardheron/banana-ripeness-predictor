@@ -1,6 +1,8 @@
 [core]
-    remote = gcs_remote
+    remote = myremote
 ['remote "my_local_remote"']
     url = C:\dvc_local_test
 ['remote "gcs_remote"']
     url = ../eddie_banana_predictor
+['remote "myremote"']
+    url = gs://eddie_banana_predictor/data
