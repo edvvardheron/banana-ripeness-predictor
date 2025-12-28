@@ -1,0 +1,18 @@
+stages:
+  prepare:
+    cmd: python src/prepare_data.py
+    deps:
+      - src/prepare_data.py
+      - data/raw
+    outs:
+      - data/processed
+
+  train:
+    cmd: python src/train_v3.py
+    deps:
+      - src/train_v3.py
+      - data/processed
+    outs:
+      - models/banana_mobilenet.keras
+
+# The Magic Command: `dvc repro`

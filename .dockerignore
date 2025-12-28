@@ -1,0 +1,13 @@
+Ignore Data
+
+data/
+eddie_banana_predictor/
+
+Ignore Environment
+
+banana-env/
+venv/
+pycache/
+.git/
+.dvc/
+mlruns/
