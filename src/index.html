@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banana Bread Predictor 🍌</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #fcfbf4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        h1 { color: #5c4b18; margin-bottom: 0.5rem; }
+        p { color: #666; margin-bottom: 1.5rem; }
+
+        .upload-box {
+            border: 2px dashed #ebd855;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .upload-box:hover { background-color: #fffde7; }
+
+        button {
+            background-color: #ebd855;
+            color: #5c4b18;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.1s;
+        }
+
+        button:active { transform: scale(0.98); }
+        button:disabled { background-color: #ddd; cursor: not-allowed; }
+
+        #preview {
+            max-width: 100%;
+            border-radius: 10px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .ready { background-color: #d4edda; color: #155724; }
+        .wait { background-color: #fff3cd; color: #856404; }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Are they ready? 🍌</h1>
+        <p>Upload a photo to check if your bananas are ready for bread.</p>
+        
+        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        
+        <div class="upload-box" onclick="document.getElementById('fileInput').click()">
+            Click to Upload Image
+            <img id="preview" src="" alt="Preview">
+        </div>
+
+        <button id="predictBtn" onclick="predictRipeness()">Check Ripeness</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const preview = document.getElementById('preview');
+        const resultDiv = document.getElementById('result');
+        const btn = document.getElementById('predictBtn');
+
+        // Show image preview when selected
+        fileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    resultDiv.style.display = 'none'; // Hide previous results
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        async function predictRipeness() {
+            if (!fileInput.files[0]) {
+                alert("Please select a banana photo first!");
+                return;
+            }
+
+            // UI Loading State
+            btn.innerText = "Analyzing...";
+            btn.disabled = true;
+
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+
+            try {
+                // Call the API
+                const response = await fetch("http://localhost:8000/predict", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                // Display Results
+                resultDiv.style.display = 'block';
+                if (data.error) {
+                    resultDiv.className = 'wait';
+                    resultDiv.innerHTML = `<strong>Error:</strong> ${data.error}`;
+                } else {
+                    // Choose color based on status text
+                    const isReady = data.status.toLowerCase().includes("ready");
+                    resultDiv.className = isReady ? 'ready' : 'wait';
+                    
+                    resultDiv.innerHTML = `
+                        <strong>${data.status}</strong><br>
+                        <small>Prediction: ${data.prediction_days} days left!</small>
+                    `;
+                }
+
+            } catch (error) {
+                console.error("Error:", error);
+                resultDiv.style.display = 'block';
+                resultDiv.className = 'wait';
+                resultDiv.innerText = "Could not connect to the API. Is it running?";
+            } finally {
+                btn.innerText = "Check Ripeness";
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
