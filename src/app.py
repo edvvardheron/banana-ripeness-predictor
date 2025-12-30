@@ -71,7 +71,9 @@ async def predict(file: UploadFile = File(...)):
         days_result = float(prediction[0][0])
         
         # 4. Human-readable logic
-        status = "Ready to eat!" if days_result < 1.0 else f"Wait about {round(days_result)} more days."
+        status = "Ready for banana bread!" if days_result < 1.0 else f"Wait about {round(days_result)} more days."
+
+        status += "Try this recipe https://www.bbcgoodfood.com/recipes/brilliant-banana-loaf" if days_result < 3.0 else ""
         
         return {
             "filename": file.filename,
