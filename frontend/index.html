@@ -4,162 +4,188 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Banana Bread Predictor 🍌</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'banana-bg': '#fcfbf4',
+                        'banana-brown': '#5c4b18',
+                        'banana-yellow': '#ebd855',
+                        'banana-yellow-hover': '#dcca4b',
+                        'banana-light': '#fffde7',
+                        'status-ready-bg': '#d4edda',
+                        'status-ready-text': '#155724',
+                        'status-wait-bg': '#fff3cd',
+                        'status-wait-text': '#856404',
+                    },
+                    fontFamily: {
+                        sans: ['Segoe UI', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background-color: #fcfbf4;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-
-        .container {
-            background: white;
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            text-align: center;
-            max-width: 400px;
-            width: 90%;
-        }
-
-        h1 { color: #5c4b18; margin-bottom: 0.5rem; }
-        p { color: #666; margin-bottom: 1.5rem; }
-
-        .upload-box {
-            border: 2px dashed #ebd855;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .upload-box:hover { background-color: #fffde7; }
-
-        button {
-            background-color: #ebd855;
-            color: #5c4b18;
-            border: none;
-            padding: 12px 24px;
-            font-size: 1rem;
-            font-weight: bold;
-            border-radius: 5px;
-            cursor: pointer;
-            width: 100%;
-            transition: transform 0.1s;
-        }
-
-        button:active { transform: scale(0.98); }
-        button:disabled { background-color: #ddd; cursor: not-allowed; }
-
-        #preview {
-            max-width: 100%;
-            border-radius: 10px;
-            margin-top: 15px;
-            display: none;
-        }
-
-        #result {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 8px;
-            display: none;
-        }
-        
-        .ready { background-color: #d4edda; color: #155724; }
-        .wait { background-color: #fff3cd; color: #856404; }
-
+        .drag-active { background-color: #fffde7; border-color: #5c4b18; }
     </style>
 </head>
-<body>
+<body class="bg-banana-bg min-h-screen flex items-center justify-center p-4 font-sans">
 
-    <div class="container">
-        <h1>Are they ready? 🍌</h1>
-        <p>Upload a photo to check if your bananas are ready for bread.</p>
-        
-        <input type="file" id="fileInput" accept="image/*" style="display: none;">
-        
-        <div class="upload-box" onclick="document.getElementById('fileInput').click()">
-            Click to Upload Image
-            <img id="preview" src="" alt="Preview">
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md text-center">
+        <h1 class="text-3xl font-bold text-banana-brown mb-2">Are they ready? 🍌</h1>
+        <p class="text-gray-500 mb-6">Upload a photo to check if your bananas are ready for bread.</p>
+
+        <!-- Hidden Input -->
+        <input type="file" id="file-input" class="hidden" accept="image/*">
+
+        <!-- Upload Zone (Drag & Drop) -->
+        <div id="drop-zone" class="border-2 border-dashed border-banana-yellow bg-white rounded-xl p-8 mb-6 cursor-pointer transition-all hover:bg-banana-light group">
+            <div id="placeholder-content">
+                <p class="text-gray-400 group-hover:text-banana-brown transition-colors">
+                    Click or Drag & Drop Image Here
+                </p>
+            </div>
+            <!-- Preview Image -->
+            <img id="preview-image" class="w-full h-48 object-cover rounded-lg shadow-sm mx-auto hidden mt-2" src="" alt="Preview">
         </div>
 
-        <button id="predictBtn" onclick="predictRipeness()">Check Ripeness</button>
-        
-        <div id="result"></div>
+        <!-- Analyze Button -->
+        <button id="predict-btn" class="w-full bg-banana-yellow hover:bg-banana-yellow-hover text-banana-brown font-bold py-3 rounded-lg transition-transform active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed hidden">
+            Check Ripeness
+        </button>
+
+        <!-- Loading Spinner -->
+        <div id="loading" class="hidden mt-6">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-banana-brown mx-auto"></div>
+            <p class="text-sm text-gray-500 mt-2">Consulting the neural network...</p>
+        </div>
+
+        <!-- Result Box -->
+        <div id="result" class="hidden mt-6 p-4 rounded-lg border">
+            <p id="status-title" class="font-bold text-lg mb-1">--</p>
+            <p id="days-text" class="text-sm">--</p>
+        </div>
     </div>
 
     <script>
-        const fileInput = document.getElementById('fileInput');
-        const preview = document.getElementById('preview');
-        const resultDiv = document.getElementById('result');
-        const btn = document.getElementById('predictBtn');
+        // --- CONFIGURATION ---
+        // ⚠️ REPLACE THIS with your actual Google Cloud Run URL!
+        // Example: "https://banana-api-x72j3.a.run.app"
+        const API_URL = "YOUR_GOOGLE_CLOUD_RUN_URL_HERE"; 
 
-        // Show image preview when selected
-        fileInput.addEventListener('change', function() {
-            const file = this.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    preview.src = e.target.result;
-                    preview.style.display = 'block';
-                    resultDiv.style.display = 'none'; // Hide previous results
-                }
-                reader.readAsDataURL(file);
-            }
+        // --- ELEMENTS ---
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const previewImage = document.getElementById('preview-image');
+        const placeholderContent = document.getElementById('placeholder-content');
+        const predictBtn = document.getElementById('predict-btn');
+        const loading = document.getElementById('loading');
+        const result = document.getElementById('result');
+        const statusTitle = document.getElementById('status-title');
+        const daysText = document.getElementById('days-text');
+
+        let selectedFile = null;
+
+        // --- EVENT LISTENERS ---
+
+        // 1. Click to Upload
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        // 2. Handle File Selection (Click)
+        fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+        // 3. Drag & Drop Support
+        dropZone.addEventListener('dragover', (e) => { 
+            e.preventDefault(); 
+            dropZone.classList.add('drag-active'); 
+        });
+        
+        dropZone.addEventListener('dragleave', () => { 
+            dropZone.classList.remove('drag-active'); 
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-active');
+            handleFile(e.dataTransfer.files[0]);
         });
 
-        async function predictRipeness() {
-            if (!fileInput.files[0]) {
-                alert("Please select a banana photo first!");
-                return;
-            }
+        // 4. File Processing Logic
+        function handleFile(file) {
+            if (!file) return;
+            selectedFile = file;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                // Show Preview
+                previewImage.src = e.target.result;
+                previewImage.classList.remove('hidden');
+                placeholderContent.classList.add('hidden'); // Hide the "Click to upload" text
+                
+                // Show Button, Hide previous results
+                predictBtn.classList.remove('hidden');
+                result.classList.add('hidden');
+                loading.classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 5. Prediction Logic
+        predictBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
 
             // UI Loading State
-            btn.innerText = "Analyzing...";
-            btn.disabled = true;
+            loading.classList.remove('hidden');
+            predictBtn.classList.add('hidden');
+            result.classList.add('hidden');
 
             const formData = new FormData();
-            formData.append("file", fileInput.files[0]);
+            formData.append('file', selectedFile);
 
             try {
-                // Call the API
-                const response = await fetch("http://localhost:8000/predict", {
-                    method: "POST",
+                // Ensure the URL ends with /predict
+                // Fallback to localhost if API_URL is still placeholder
+                let baseUrl = API_URL.includes("YOUR_GOOGLE_CLOUD") ? "http://localhost:8000" : API_URL;
+                const endpoint = baseUrl.endsWith('/') ? `${baseUrl}predict` : `${baseUrl}/predict`;
+                
+                const response = await fetch(endpoint, {
+                    method: 'POST',
                     body: formData
                 });
 
                 const data = await response.json();
 
-                // Display Results
-                resultDiv.style.display = 'block';
-                if (data.error) {
-                    resultDiv.className = 'wait';
-                    resultDiv.innerHTML = `<strong>Error:</strong> ${data.error}`;
+                if (data.error) throw new Error(data.error);
+
+                // --- UPDATE UI BASED ON RESULT ---
+                result.classList.remove('hidden');
+                
+                // Determine styling based on status
+                const isReady = data.status.toLowerCase().includes("ready");
+                
+                if (isReady) {
+                    result.className = "mt-6 p-4 rounded-lg border bg-status-ready-bg border-green-200 text-status-ready-text";
                 } else {
-                    // Choose color based on status text
-                    const isReady = data.status.toLowerCase().includes("ready");
-                    resultDiv.className = isReady ? 'ready' : 'wait';
-                    
-                    resultDiv.innerHTML = `
-                        <strong>${data.status}</strong><br>
-                        <small>Prediction: ${data.prediction_days} days left!</small>
-                    `;
+                    result.className = "mt-6 p-4 rounded-lg border bg-status-wait-bg border-yellow-200 text-status-wait-text";
                 }
 
+                statusTitle.innerText = data.status;
+                daysText.innerText = `Prediction: ${data.prediction_days} days left`;
+
             } catch (error) {
-                console.error("Error:", error);
-                resultDiv.style.display = 'block';
-                resultDiv.className = 'wait';
-                resultDiv.innerText = "Could not connect to the API. Is it running?";
+                result.classList.remove('hidden');
+                result.className = "mt-6 p-4 rounded-lg border bg-red-100 border-red-200 text-red-700";
+                statusTitle.innerText = "Error";
+                daysText.innerText = "Could not connect to the API. Check console for details.";
+                console.error("API Error:", error);
             } finally {
-                btn.innerText = "Check Ripeness";
-                btn.disabled = false;
+                loading.classList.add('hidden');
+                predictBtn.classList.remove('hidden');
+                predictBtn.innerText = "Check Another Banana";
             }
-        }
+        });
     </script>
 </body>
 </html>
