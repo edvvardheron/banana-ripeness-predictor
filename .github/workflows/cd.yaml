@@ -13,8 +13,6 @@ permissions:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    # Only run CD if the CI tests passed!
-    needs: test 
 
     steps:
       - uses: actions/checkout@v3
