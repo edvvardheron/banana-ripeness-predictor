@@ -9,7 +9,7 @@ from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropou
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
-# --- Config ---
+# Config
 params = {
     "seed": 42,
     "input_dir": "data/processed",
@@ -53,7 +53,7 @@ def build_improved_model(input_shape):
         Dense(64, activation='relu'),
         Dropout(params["dropout_rate"]),
         
-        # Output Layer: ReLU prevents negative predictions
+        # Output Layer: ReLU prevents negative predictions (just in case)
         Dense(1, activation='relu') 
     ])
     
@@ -66,7 +66,7 @@ def train():
     mlflow.tensorflow.autolog()
 
     with mlflow.start_run():
-        print("📂 Loading data...")
+        print("Loading data...")
         X_train, X_test, y_train, y_test = load_data(params["input_dir"])
         
         # Check shapes
@@ -77,12 +77,12 @@ def train():
             rotation_range=30,
             width_shift_range=0.2,
             height_shift_range=0.2,
-            brightness_range=[0.8, 1.2], # Light variations help a lot!
+            brightness_range=[0.8, 1.2], # Light variations help a lot, espeically with the pictures I was taking
             horizontal_flip=True,
             fill_mode='nearest'
         )
         
-        print("🏗️ Building improved model...")
+        print("Building improved model...")
         model = build_improved_model(X_train.shape[1:])
         
         # Callbacks
@@ -91,7 +91,7 @@ def train():
         # LR Scheduler: If loss stops dropping, slow down learning rate automatically
         reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=3, min_lr=0.00001)
 
-        print("🚀 Starting training (v2)...")
+        print("Starting training (v2)...")
         history = model.fit(
             datagen.flow(X_train, y_train, batch_size=params["batch_size"]),
             validation_data=(X_test, y_test),
@@ -101,7 +101,7 @@ def train():
         )
         
         loss, mae = model.evaluate(X_test, y_test, verbose=0)
-        print(f"\n✅ Final Test MAE: {mae:.2f} days")
+        print(f"\nFinal Test MAE: {mae:.2f} days")
         
         # Save
         Path(params["model_dir"]).mkdir(exist_ok=True)

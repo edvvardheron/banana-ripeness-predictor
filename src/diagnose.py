@@ -32,7 +32,7 @@ def diagnose():
     worst_indices = np.argsort(errors)[::-1]
     
     print("\n" + "="*40)
-    print("🛑 TOP 5 WORST PREDICTIONS")
+    print("TOP 5 WORST PREDICTIONS")
     print("="*40)
     
     for i in range(5):

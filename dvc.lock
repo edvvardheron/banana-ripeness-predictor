@@ -5,7 +5,11 @@ stages:
     deps:
     - path: data/raw
       hash: md5
+<<<<<<< Updated upstream
       md5: 63587179668b8a0502eaf5c7cfc57320.dir
+=======
+      md5: 1f2ebc0b6e0baa85382251d5f6da656e.dir
+>>>>>>> Stashed changes
       size: 203656324
       nfiles: 95
     - path: src/prepare_data.py
@@ -15,6 +19,29 @@ stages:
     outs:
     - path: data/processed
       hash: md5
+<<<<<<< Updated upstream
       md5: 4d620b628fc2de84c4a65dee45dd84b2.dir
       size: 203835552
       nfiles: 4
+=======
+      md5: fb5cc6db64c6acead2184b2fddbb4bbd.dir
+      size: 203835552
+      nfiles: 4
+  train:
+    cmd: python src/train_v3.py
+    deps:
+    - path: data/processed
+      hash: md5
+      md5: fb5cc6db64c6acead2184b2fddbb4bbd.dir
+      size: 203835552
+      nfiles: 4
+    - path: src/train_v3.py
+      hash: md5
+      md5: ade3448ddf3b73b3a4492bc82419c610
+      size: 4360
+    outs:
+    - path: models/banana_mobilenet.keras
+      hash: md5
+      md5: 52f1fbb39e020031630df9c8abf944ad
+      size: 11596665
+>>>>>>> Stashed changes
