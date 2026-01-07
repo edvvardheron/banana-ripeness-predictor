@@ -27,17 +27,17 @@ def parse_days_from_filename(filename):
     # 2. Extract strictly from the end
     # Regex Breakdown:
     # _       : Matches the underscore before the number
-    # (\d+)   : Captures the digits (This is our label)
+    # (\d+)   : Captures the digits (This is the label)
     # _days   : Matches the literal text "_days"
-    # $       : Anchors to the END of the string (Crucial!)
+    # $       : Anchors to the END of the string
     match = re.search(r'_(\d+)_days$', stem)
     
     if match:
         return int(match.group(1))
     
     # Debugging: Print warning if format doesn't match
-    # This helps you catch files that are named incorrectly
-    print(f"⚠️ Warning: Filename '{filename}' does not match format '..._X_days'")
+    # This helps catch files that are named incorrectly
+    print(f"Warning: Filename '{filename}' does not match format '..._X_days'")
     return None
 
 def process_data():
@@ -48,7 +48,7 @@ def process_data():
     images = []
     labels = []
 
-    print(f"📂 Reading images from {input_path}...")
+    print(f"Reading images from {input_path}...")
 
     valid_extensions = {".jpg", ".jpeg", ".png", ".bmp"}
     
@@ -77,14 +77,14 @@ def process_data():
             print(f"Error processing {file_path.name}: {e}")
 
     if not images:
-        print("❌ No valid images found! Check your filenames match '..._X_days.jpg'")
+        print("No valid images found! Check your filenames match '..._X_days.jpg'")
         sys.exit(1)
 
     X = np.array(images)
     y = np.array(labels)
 
-    print(f"✅ Loaded {len(X)} images with correct labels.")
-    print(f"   Example Label: {y[0]}") 
+    print(f"Loaded {len(X)} images with correct labels.")
+    print(f"Example Label: {y[0]}") 
 
     # 3. Split Data
     X_train, X_test, y_train, y_test = train_test_split(
@@ -97,7 +97,7 @@ def process_data():
     np.save(output_path / "y_train.npy", y_train)
     np.save(output_path / "y_test.npy", y_test)
 
-    print(f"💾 Processed data saved to {output_path}")
+    print(f"Processed data saved to {output_path}")
 
 if __name__ == "__main__":
     process_data()
