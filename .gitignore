@@ -4,3 +4,8 @@ eddie_banana_predictor/
 data/processed/
 models/
 mlruns/
+logs/
+venv/
+.env
+.ipynb_checkpoints/
+.DS_Store

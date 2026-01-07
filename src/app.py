@@ -4,7 +4,7 @@ import tensorflow as tf
 from fastapi import FastAPI, File, UploadFile
 from PIL import Image
 import io
-from fastapi.middleware.cors import CORSMiddleware # <--- Import this
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Banana Ripeness Predictor API")
 app.add_middleware(
@@ -34,9 +34,9 @@ def preprocess_image(image_bytes):
     Transforms raw bytes into the format the model expects.
     1. Open as PIL image
     2. Convert to RGB (removes alpha channel if present)
-    3. Resize to 224x224
+    3. Resize to 299x299
     4. Normalize to [0, 1]
-    5. Expand dimensions to (1, 224, 224, 3)
+    5. Expand dimensions to (1, 299, 299, 3)
     """
     img = Image.open(io.BytesIO(image_bytes))
     img = img.convert("RGB")
@@ -44,8 +44,8 @@ def preprocess_image(image_bytes):
     
     # Convert to array and normalize
     img_array = np.array(img) / 255.0
-    
-    # Add batch dimension: (224, 224, 3) -> (1, 224, 224, 3)
+
+    # Add batch dimension: (299, 299, 3) -> (1, 299, 299, 3)
     img_array = np.expand_dims(img_array, axis=0)
     return img_array
 

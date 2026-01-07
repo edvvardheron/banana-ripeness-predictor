@@ -10,16 +10,16 @@ from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropou
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.callbacks import EarlyStopping
 
-# --- Configuration ---
+# Configuration
 # Again, ideally loaded from params.yaml
 params = {
     "seed": 42,
     "input_dir": "data/processed",
     "model_dir": "models",
     "batch_size": 30,
-    "epochs": 50,           # We set this high, but Early Stopping will cut it short
+    "epochs": 50,           # set this high, but Early Stopping will cut it short
     "learning_rate": 0.0001,
-    "dropout_rate": 0.5     # REGULARIZATION: 50% of neurons dropped
+    "dropout_rate": 0.5     # 50% of neurons dropped for regularization
 }
 
 # Ensure reproducibility
@@ -27,7 +27,7 @@ tf.random.set_seed(params["seed"])
 np.random.seed(params["seed"])
 
 def load_data(input_dir):
-    """Loads the numpy arrays saved in Step 2."""
+    """Loads the numpy arrays saved during data preparation."""
     input_path = Path(input_dir)
     X_train = np.load(input_path / "X_train.npy")
     X_test = np.load(input_path / "X_test.npy")
@@ -38,12 +38,12 @@ def load_data(input_dir):
 def build_model(input_shape):
     """
     Defines a simple Convolutional Neural Network (CNN).
-    We use a Regression output (1 neuron) to predict 'Days'.
+    Regression output (1 neuron) to predict 'Days'.
     """
     model = Sequential([
         Input(shape=input_shape),
         
-        # --- Feature Extraction (The "Eye") ---
+        # Feature Extraction
         Conv2D(32, (3, 3), activation='relu'),
         MaxPooling2D((2, 2)),
         
@@ -58,14 +58,13 @@ def build_model(input_shape):
         
         Flatten(),
         
-        # --- Classification/Regression (The "Brain") ---
+        # Classification/Regression
         Dense(64, activation='relu'),
         
-        # REGULARIZATION: Dropout
-        # Randomly turns off neurons to prevent memorization
+        # Dropout - Randomly turns off neurons to prevent memorization
         Dropout(params["dropout_rate"]),
         
-        # Output Layer: Single neuron for regression (predicting a number)
+        # Output Layer: for predicting number of days
         Dense(1) 
     ])
     
@@ -84,10 +83,10 @@ def train():
     mlflow.tensorflow.autolog() # Automatically logs metrics, params, and model artifacts!
 
     with mlflow.start_run():
-        print("📂 Loading data...")
+        print("Loading data...")
         X_train, X_test, y_train, y_test = load_data(params["input_dir"])
         
-        # 2. Data Augmentation (REGULARIZATION)
+        # 2. Data Augmentation (regularization)
         # Create "fake" variations of our bananas to expand the dataset
         datagen = ImageDataGenerator(
             rotation_range=20,      # Rotate slightly
@@ -98,11 +97,11 @@ def train():
             fill_mode='nearest'
         )
         
-        print("🏗️ Building model...")
+        print("Building model...")
         model = build_model(X_train.shape[1:])
         model.summary()
         
-        # 3. Early Stopping (REGULARIZATION)
+        # 3. Early Stopping (rergularization)
         # Stop training if validation loss doesn't improve for 5 epochs
         early_stop = EarlyStopping(
             monitor='val_loss',
@@ -111,7 +110,7 @@ def train():
             verbose=1
         )
 
-        print("🚀 Starting training...")
+        print("Starting training...")
         # Note: We pass datagen.flow() to train on augmented data
         history = model.fit(
             datagen.flow(X_train, y_train, batch_size=params["batch_size"]),
@@ -123,13 +122,13 @@ def train():
         
         # 4. Evaluation
         loss, mae = model.evaluate(X_test, y_test, verbose=0)
-        print(f"✅ Final Test MAE: {mae:.2f} days (On average, the prediction is off by {mae:.2f} days)")
+        print(f"Final Test MAE: {mae:.2f} days (On average, the prediction is off by {mae:.2f} days)")
         
-        # 5. Save Model locally (MLflow also saves it, but good to have a copy)
+        # 5. Save Model locally (MLflow also saves it also)
         Path(params["model_dir"]).mkdir(exist_ok=True)
         model_path = Path(params["model_dir"]) / "banana_model.keras"
         model.save(model_path)
-        print(f"💾 Model saved to {model_path}")
+        print(f"Model saved to {model_path}")
 
 if __name__ == "__main__":
     train()
