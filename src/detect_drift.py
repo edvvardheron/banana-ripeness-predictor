@@ -20,7 +20,7 @@ def load_new_images(folder_path):
     
     path = Path(folder_path)
     if not path.exists():
-        print(f"⚠️ Folder {folder_path} does not exist. Create it and add images.")
+        print(f"Folder {folder_path} does not exist. Create it and add images.")
         return np.array([])
 
     for file_path in path.glob("*"):
@@ -56,22 +56,22 @@ def get_feature_extractor(full_model):
     # This helps if the layer is named 'global_average_pooling2d_1' etc.
     for layer in full_model.layers:
         if "GlobalAveragePooling2D" in layer.__class__.__name__:
-             print(f"ℹ️ Found embedding layer by type: {layer.name}")
+             print(f"Found embedding layer by type: {layer.name}")
              return tf.keras.Model(inputs=full_model.input, outputs=layer.output)
 
     # 3. Final Fallback: Grab the 3rd to last layer (Usually the Dense layer before Dropout)
     # Architecture: [ ... GlobalAvgPool -> Dense(128) -> Dropout -> Output ]
     # -1 is Output, -2 is Dropout, -3 is Dense(128). 
     # The Dense(128) layer is actually a great place to check for drift.
-    print(f"⚠️ Specific pooling layer not found. Using hidden layer: {full_model.layers[-3].name}")
+    print(f"Specific pooling layer not found. Using hidden layer: {full_model.layers[-3].name}")
     return tf.keras.Model(inputs=full_model.input, outputs=full_model.layers[-3].output)
 
 def detect():
-    print("📉 Loading Resources...")
+    print("Loading Resources...")
     
     # 1. Load Reference Data (Training Set)
     if not os.path.exists(REFERENCE_DATA_PATH):
-        print("❌ Processed training data not found. Run prepare_data.py first.")
+        print("Processed training data not found. Run prepare_data.py first.")
         return
     X_ref = np.load(REFERENCE_DATA_PATH)
     
@@ -79,14 +79,14 @@ def detect():
     X_new = load_new_images(NEW_DATA_FOLDER)
     
     if len(X_new) == 0:
-        print("❌ No new images found to check.")
+        print("No new images found to check.")
         return
 
     # 3. Load Model & Create Feature Extractor
     full_model = tf.keras.models.load_model(MODEL_PATH)
     feature_model = get_feature_extractor(full_model)
 
-    print("🧠 Extracting Embeddings (this may take a moment)...")
+    print("Extracting Embeddings (this may take a moment)...")
     # Get the "Brain Activity" for old vs new data
     ref_embeddings = feature_model.predict(X_ref, verbose=0)
     new_embeddings = feature_model.predict(X_new, verbose=0)
@@ -100,7 +100,7 @@ def detect():
     drift_score = wasserstein_distance(ref_mean, new_mean)
     
     print("\n" + "="*30)
-    print("📊 DRIFT DETECTION REPORT")
+    print("DRIFT DETECTION REPORT")
     print("="*30)
     print(f"Reference Images: {len(X_ref)}")
     print(f"New Images:       {len(X_new)}")
@@ -108,11 +108,11 @@ def detect():
     print(f"Threshold:        {DRIFT_THRESHOLD}")
     
     if drift_score > DRIFT_THRESHOLD:
-        print("\n🚨 DRIFT DETECTED! 🚨")
+        print("\nDRIFT DETECTED!")
         print("The new data looks significantly different from the training data.")
         print("Recommendation: Label these new images and Retrain the model.")
     else:
-        print("\n✅ Data looks stable.")
+        print("\nData looks stable.")
         print("The new images follow a similar distribution to the training set.")
 
     # 5. Visualize
@@ -124,7 +124,7 @@ def detect():
     plt.ylabel("Density")
     plt.legend()
     plt.savefig("drift_report.png")
-    print("\n🖼️  Saved visualization to 'drift_report.png'")
+    print("\nSaved visualization to 'drift_report.png'")
 
 if __name__ == "__main__":
     detect()
