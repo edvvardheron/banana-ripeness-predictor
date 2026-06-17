@@ -67,10 +67,12 @@ pip install -r requirements.txt
 
 The raw image data and trained model artifacts are versioned via DVC.
 
-# Pull the data from Google Cloud Storage
+Pull the data from GCS
+
 dvc pull
 
-# Execute the DAG pipeline (prepare_data.py -> train_transfer.py)
+Executre the DAG pipeline (prepare_data.py -> train.transfer.py)
+
 dvc repro
 
 
@@ -85,7 +87,8 @@ Navigate to http://127.0.0.1:8000/docs to test the endpoints via the Swagger UI.
 
 To test the monitoring system against incoming data:
 
-# Add sample images to data/incoming/ then run:
+Add sample images to data/incoming/ then run:
+
 python src/detect_drift.py
 
 
