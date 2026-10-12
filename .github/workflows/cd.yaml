@@ -5,10 +5,12 @@ on:
   push:
     branches: [ "main" ]
 
-# Permissions needed to push to GitHub Container Registry
+# Permissions needed to push to GitHub Container Registry, and id-token
+# for Workload Identity Federation auth to GCP (no long-lived key needed)
 permissions:
   packages: write
   contents: read
+  id-token: write
 
 jobs:
   build-and-push:
@@ -16,6 +18,22 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/<PROJECT_NUMBER>/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: '<SERVICE_ACCOUNT_EMAIL>'
+
+      - name: Set up Python (for DVC)
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Pull model artifacts from DVC remote
+        run: |
+          pip install "dvc[gs]"
+          dvc pull models/banana_mobilenet.keras
 
       - name: Log in to the Container registry
         uses: docker/login-action@v2

@@ -1,6 +1,8 @@
 import numpy as np
 import tensorflow as tf
 import os
+import sys
+import json
 import glob
 from pathlib import Path
 from PIL import Image
@@ -66,21 +68,39 @@ def get_feature_extractor(full_model):
     print(f"Specific pooling layer not found. Using hidden layer: {full_model.layers[-3].name}")
     return tf.keras.Model(inputs=full_model.input, outputs=full_model.layers[-3].output)
 
+DRIFT_REPORT_PATH = "reports/drift_report.json"
+
+
+def write_report(drift_detected, drift_score=None, reason=None):
+    Path("reports").mkdir(exist_ok=True)
+    report = {
+        "drift_detected": drift_detected,
+        "drift_score": drift_score,
+        "threshold": DRIFT_THRESHOLD,
+        "reason": reason,
+    }
+    with open(DRIFT_REPORT_PATH, "w") as f:
+        json.dump(report, f, indent=2)
+    return report
+
+
 def detect():
     print("Loading Resources...")
-    
+
     # 1. Load Reference Data (Training Set)
     if not os.path.exists(REFERENCE_DATA_PATH):
         print("Processed training data not found. Run prepare_data.py first.")
-        return
+        write_report(drift_detected=False, reason="reference_data_missing")
+        sys.exit(0)
     X_ref = np.load(REFERENCE_DATA_PATH)
-    
+
     # 2. Load New Data (Production/Incoming)
     X_new = load_new_images(NEW_DATA_FOLDER)
-    
+
     if len(X_new) == 0:
         print("No new images found to check.")
-        return
+        write_report(drift_detected=False, reason="no_new_images")
+        sys.exit(0)
 
     # 3. Load Model & Create Feature Extractor
     full_model = tf.keras.models.load_model(MODEL_PATH)
@@ -107,7 +127,9 @@ def detect():
     print(f"Drift Score:      {drift_score:.4f}")
     print(f"Threshold:        {DRIFT_THRESHOLD}")
     
-    if drift_score > DRIFT_THRESHOLD:
+    drift_detected = drift_score > DRIFT_THRESHOLD
+
+    if drift_detected:
         print("\nDRIFT DETECTED!")
         print("The new data looks significantly different from the training data.")
         print("Recommendation: Label these new images and Retrain the model.")
@@ -116,6 +138,7 @@ def detect():
         print("The new images follow a similar distribution to the training set.")
 
     # 5. Visualize
+    Path("reports").mkdir(exist_ok=True)
     plt.figure(figsize=(10, 6))
     plt.hist(ref_mean, bins=30, alpha=0.5, label='Training Data', density=True, color='blue')
     plt.hist(new_mean, bins=30, alpha=0.5, label='New Data', density=True, color='red')
@@ -123,8 +146,14 @@ def detect():
     plt.xlabel("Image Feature Complexity")
     plt.ylabel("Density")
     plt.legend()
-    plt.savefig("drift_report.png")
-    print("\nSaved visualization to 'drift_report.png'")
+    plt.savefig("reports/drift_plot.png")
+    print("\nSaved visualization to 'reports/drift_plot.png'")
+
+    write_report(drift_detected=drift_detected, drift_score=float(drift_score),
+                 reason="drift_detected" if drift_detected else "stable")
+
+    # Non-zero exit lets CI branch on "drift found -> trigger retraining".
+    sys.exit(1 if drift_detected else 0)
 
 if __name__ == "__main__":
     detect()

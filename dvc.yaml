@@ -13,6 +13,21 @@ stages:
       - src/train_v3.py
       - data/processed
     outs:
+      - models/candidate_model.keras
+    metrics:
+      - reports/train_metrics.json:
+          cache: false
+
+  promote:
+    cmd: python src/promote_model.py
+    deps:
+      - src/promote_model.py
+      - models/candidate_model.keras
+      - reports/train_metrics.json
+    outs:
       - models/banana_mobilenet.keras
+    metrics:
+      - reports/production_metrics.json:
+          cache: false
 
 # The Magic Command: `dvc repro`

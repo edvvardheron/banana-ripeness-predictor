@@ -1,4 +1,5 @@
 import os
+import json
 import numpy as np
 import tensorflow as tf
 import mlflow
@@ -92,7 +93,7 @@ def build_transfer_model(input_shape):
 
 def train():
     mlflow.set_experiment("Banana_Readiness_Transfer")
-    mlflow.tensorflow.autolog
+    mlflow.tensorflow.autolog()
 
     with mlflow.start_run():
         mlflow.log_params(params)
@@ -132,13 +133,14 @@ def train():
         )
         
         loss, mae = model.evaluate(X_test, y_test, verbose=0)
-        print(f"\n✅ Final Test MAE: {mae:.2f} days")
-        
+        print(f"\n Final Test MAE: {mae:.2f} days")
+
         mlflow.log_metric("test_loss", loss)
         mlflow.log_metric("test_mae", mae)
-        
-        Path(params["model_dir"]).mkdir(exist_ok=True)
-        model.save(Path(params["model_dir"]) / "banana_mobilenet.keras")
+
+        # Track whichever metrics correspond to the model we end up saving below.
+        # Fine-tuning (if it runs) overwrites these with its own numbers.
+        final_test_loss, final_test_mae = float(loss), float(mae)
 
         # --- Fine-tuning stage: unfreeze the last N layers of the base model ---
         try:
@@ -177,12 +179,25 @@ def train():
                 )
 
                 ft_loss, ft_mae = model.evaluate(X_test, y_test, verbose=0)
-                print(f"\n✅ Fine-tuned Test MAE: {ft_mae:.2f} days")
+                print(f"\n Fine-tuned Test MAE: {ft_mae:.2f} days")
                 mlflow.log_metric("fine_tune_test_mae", float(ft_mae))
                 mlflow.log_metric("fine_tune_test_loss", float(ft_loss))
 
-                # Save fine-tuned model
-                model.save(Path(params["model_dir"]) / "banana_mobilenet_finetuned.keras")
+                final_test_loss, final_test_mae = float(ft_loss), float(ft_mae)
+
+        # --- Save the final candidate model (NOT the serving path) ---
+        # This is deliberately a staging artifact: src/promote_model.py decides
+        # whether it's good enough to become models/banana_mobilenet.keras.
+        Path(params["model_dir"]).mkdir(exist_ok=True)
+        candidate_path = Path(params["model_dir"]) / "candidate_model.keras"
+        model.save(candidate_path)
+        print(f"Candidate model saved to {candidate_path}")
+
+        Path("reports").mkdir(exist_ok=True)
+        metrics = {"test_loss": final_test_loss, "test_mae": final_test_mae}
+        with open("reports/train_metrics.json", "w") as f:
+            json.dump(metrics, f, indent=2)
+        print(f"Candidate metrics written to reports/train_metrics.json: {metrics}")
 
 if __name__ == "__main__":
     train()
